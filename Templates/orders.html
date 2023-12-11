@@ -1,0 +1,292 @@
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order System</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Order List</h2>
+        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#addOrderModal">Add Order</button>
+
+        <!-- Search Bar -->
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Search..." id="searchInput">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">Search</button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Order Id</th>
+                    <th>Product Name</th>
+                    <th>Product Quantity</th>
+                    <th>Product Price</th>
+                    <th>Order Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="order-list">
+                <!-- Orders will be displayed here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add Order Modal -->
+    <div class="modal fade" id="addOrderModal" tabindex="-1" role="dialog" aria-labelledby="addOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addOrderModalLabel">Add Order</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addOrderForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="productName">Product Name</label>
+                            <input type="text" class="form-control" id="productName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productQuantity">Product Quantity</label>
+                            <input type="number" class="form-control" id="productQuantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productPrice">Product Price</label>
+                            <input type="text" class="form-control" id="productPrice" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderStatus">Order Status</label>
+                            <select class="form-control" id="orderStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="addOrderBtn">Add Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div class="modal fade" id="editOrderModal" tabindex="-1" role="dialog" aria-labelledby="editOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editOrderModalLabel">Edit Order</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editOrderForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="editProductName">Product Name</label>
+                            <input type="text" class="form-control" id="editProductName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductQuantity">Product Quantity</label>
+                            <input type="number" class="form-control" id="editProductQuantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductPrice">Product Price</label>
+                            <input type="text" class="form-control" id="editProductPrice" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editOrderStatus">Order Status</label>
+                            <select class="form-control" id="editOrderStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="editOrderId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveChangesBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script >
+        $(document).ready(function () {
+            // Fetch and display orders on page load
+            fetchOrders();
+            console.log(fetchOrders());
+        
+            // Add Order Button Click
+            $('#addOrderBtn').click(function () {
+                var csrfToken = $('[name=csrfmiddlewaretoken]').val();
+        
+                $.ajax({
+                    url: 'http://127.0.0.1:8000/orders/',
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        product_name: $('#productName').val(),
+                        product_quantity: $('#productQuantity').val(),
+                        product_price: $('#productPrice').val(),
+                        order_status: $('#orderStatus').val()
+                    },
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function (data) {
+                        $('#addOrderModal').modal('hide');
+                        fetchOrders();
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            });
+        
+            // Edit Order Button Click
+            $(document).on('click', '.btn-edit', function () {
+                var orderId = $(this).data('order-id');
+                $.ajax({
+                    url: `http://127.0.0.1:8000/orders/${orderId}/`,
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        // Populate the edit modal with order details
+                        $('#editOrderId').val(data.id);
+                        $('#editProductName').val(data.product_name);
+                        $('#editProductQuantity').val(data.product_quantity);
+                        $('#editProductPrice').val(data.product_price);
+                        $('#editOrderStatus').val(data.order_status);
+                        // Show the edit modal
+                        $('#editOrderModal').modal('show');
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            });
+        
+            // Save Changes Button Click
+            $('#saveChangesBtn').click(function () {
+                var orderId = $('#editOrderId').val();
+                var csrfToken = $('[name=csrfmiddlewaretoken]').val();
+                $.ajax({
+                    url: `http://127.0.0.1:8000/orders/${orderId}/`,
+                    method: 'PUT',
+                    dataType: 'json',
+                    data: {
+                        product_name: $('#editProductName').val(),
+                        product_quantity: $('#editProductQuantity').val(),
+                        product_price: $('#editProductPrice').val(),
+                        order_status: $('#editOrderStatus').val()
+                    },
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function (data) {
+                        // Close the edit modal and refresh the order list
+                        $('#editOrderModal').modal('hide');
+                        fetchOrders();
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            });
+        
+            // Delete Order Button Click
+            $(document).on('click', '.btn-delete', function () {
+        
+                var orderId = $(this).data('order-id');
+                var csrfToken = $('[name=csrfmiddlewaretoken]').val();
+                $.ajax({
+                    url: `http://127.0.0.1:8000/orders/${orderId}/`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function (data) {
+                        // Refresh the order list
+                        fetchOrders();
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            });
+        
+            // Search Button Click
+            $('#searchButton').click(function () {
+                $.ajax({
+                    url: 'http://127.0.0.1:8000/orders/',
+                    method: 'GET',
+                    dataType: 'json',
+                    data: {
+                        search: $('#searchInput').val()
+                    },
+                    success: function (data) {
+                        displayOrders(data);
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            });
+        
+            function fetchOrders() {
+                $.ajax({
+                    url: 'http://127.0.0.1:8000/orders/',
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        displayOrders(data);
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            }
+        
+            function displayOrders(orders) {
+                var orderList = $('#order-list');
+                orderList.empty();
+        
+                orders.forEach(function (order) {
+                    var row = `<tr>
+                                   <td>${order.id}</td>
+                                   <td>${order.product_name}</td>
+                                   <td>${order.product_quantity}</td>
+                                   <td>${order.product_price}</td>
+                                   <td>${order.order_status}</td>
+                                   <td>
+                                       <button class="btn btn-warning btn-sm btn-edit" data-order-id="${order.id}">Edit</button>
+                                       <button class="btn btn-danger btn-sm btn-delete" data-order-id="${order.id}">Delete</button>
+                                   </td>
+                               </tr>`;
+                    orderList.append(row);
+                });
+            }
+        });
+        
+    </script>
+
+</body>
+</html>
+{% endblock %} 
